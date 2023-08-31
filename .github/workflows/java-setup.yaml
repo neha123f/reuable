@@ -1,0 +1,47 @@
+name: reusable file-java
+
+on:
+  workflow_call:
+   outputs:
+     cache:
+       value: ${{ jobs.setup-java.outputs.output1 }}
+
+jobs:
+  setup-java:
+    runs-on: ubuntu-latest
+    outputs:
+       output1: ${{ steps.set-cache-found.outputs.cache }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Java
+      id: setup-java
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'adopt'
+        java-version: '11'
+      
+    - name: Show Java version and path
+      id: path
+      run: |
+        echo "Java version:"
+        java -version
+        
+        echo "Java installation path:"
+        java_path=$(dirname $(dirname $(readlink -f $(command -v java)))) 
+        echo "$java_path" 
+        echo "::set-output name=java_path::$java_path"
+        
+    - name: Cache Java path
+      id: cache-java-path
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.path.outputs.java_path }}
+        key: ${{ runner.os }}-java-${{ hashFiles('**/*.java') }}
+      
+    - name: Set cache found output
+      id: set-cache-found
+      run: |
+        echo "cache=found" >> $GITHUB_OUTPUT 
