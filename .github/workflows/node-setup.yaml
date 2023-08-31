@@ -1,0 +1,48 @@
+name: reusable file-node
+
+on:
+  workflow_call:
+    outputs:
+      cache:
+        value: ${{ jobs.setup-node.outputs.output1 }}
+
+
+jobs:
+  setup-node:
+    runs-on: ubuntu-latest
+    outputs:
+      output1: ${{ steps.set-cache-found.outputs.cache }}
+      
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      id: setup-node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14' # You can specify the Node.js version here
+      
+    - name: Show Node.js version and path
+      id: path
+      run: |
+        echo "Node.js version:"
+        node -v
+        
+        echo "Node.js installation path:"
+        node_path=$(dirname $(dirname $(readlink -f $(command -v node)))) 
+        echo "$node_path" 
+        echo "::set-output name=node_path::$node_path"
+        
+    - name: Cache Node.js path
+      id: cache-node-path
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.path.outputs.node_path }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/*.js') }}
+      
+    - name: Set cache found output
+      id: set-cache-found
+      run: |
+        echo "cache=found" >> $GITHUB_OUTPUT
